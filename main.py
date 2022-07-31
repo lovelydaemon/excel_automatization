@@ -1,19 +1,23 @@
 import pandas as pd
+from pandas import Series, DataFrame
 import numpy as np
 
 
 DOC_FILEPATH = 'sample.xlsx'
 SHEET_NAME = 'Лист2'
 
-def df_get(*columns: str):
+def df_get(*columns: str) -> Series | DataFrame:
     columns = list(columns)
     if len(columns) == 1:
         columns = columns[0]
 
-    data = df.get(columns)
-    if data is None:
-        raise ValueError('columns not found')
-    return data
+    try:
+        data = df[columns]
+    except KeyError as e:
+        print(f'KeyError: key {e} not found')
+        exit()
+    else:
+        return data
 
 def df_split_fullname(column):
     return column.str.split(expand=True)
@@ -42,11 +46,13 @@ def df_on_pension():
     choices = ['да', 'да']
     return np.select(conds, choices, default='нет')
 
-def df_count_employees(startwith: str) -> int:
-    conds = [
-        df['фамилия'].str.startswith(startwith)
-    ]
-    return np.select(conds, )
+def df_count_employees(column: str, startwith: str) -> int:
+    return np.count_nonzero(df_get(column).str.startswith(startwith))
+
+def df_max_fired() -> str:
+    new_df = df_get('дата увольнения', 'пол').dropna()
+    genders, counts = np.unique(new_df['пол'], return_counts=True)
+    return genders[counts == counts.max()][0]
 
 
 if __name__ == '__main__':
@@ -62,6 +68,8 @@ if __name__ == '__main__':
     # на пенсии
     df['пенсионного возраста'] = df_on_pension()
 
+    # print(df_count_employees('фамилия', 'М'))
+    # print(df_max_fired())
 
     df.columns = [x.capitalize() for x in df.columns]
     df.to_excel('result.xlsx', sheet_name='NewSheet', index=False)
