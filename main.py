@@ -20,9 +20,10 @@ def df_get(*columns: str) -> Series | DataFrame:
     else:
         return data
 
-def df_split_fullname(column):
+
+def df_split(column: str):
     """Возвращает n колонок, где n - количество слов через пробел"""
-    return column.str.split(expand=True)
+    return df_get(column).str.split(expand=True)
 
 
 def df_gender():
@@ -50,6 +51,7 @@ def df_on_pension():
     choices = ['да', 'да']
     return np.select(conds, choices, default='нет')
 
+
 def df_count_employees(column: str, startwith: str) -> int:
     """Возвращает кол-во сотрудников, где значение начинается с startwith"""
     return df_get(column).str.startswith(startwith).sum()
@@ -58,18 +60,20 @@ def df_count_employees(column: str, startwith: str) -> int:
 def df_max_fired() -> str:
     """Возвращает пол с максимальным кол-вом уволенных сотрудников"""
     new_df = df_get('дата увольнения', 'пол').dropna()
-    genders, counts = np.unique(new_df['пол'], return_counts=True)
-    return genders[counts == counts.max()][0]
+    genders, c = np.unique(new_df['пол'], return_counts=True)
+    return genders[c.argmax()]
 
 
 def df_max_count_value(column: str) -> str:
     """Возвращает максимально встречающееся значение колонки"""
-    uniq, counts = np.unique(df_get(column).dropna(), return_counts=True)
-    return uniq[counts == counts.max()][0]
+    uniq, c = np.unique(df_get(column).dropna(), return_counts=True)
+    return uniq[c.argmax()]
+
 
 def df_num_working(at_time: str) -> int:
     new_df = df_get('дата увольнения')
     return np.logical_or(new_df.isna(), new_df.gt(at_time)).sum()
+
 
 def df_num_fired(at_time: str) -> int:
     return np.sum(df_get('дата увольнения').le(at_time))
@@ -80,12 +84,13 @@ def df_mean_age_fired():
     time = np.timedelta64(1, 'Y')
     return (np.subtract(new['дата увольнения'], new['дата рождения']) / time).mean().astype(int)
 
+
 if __name__ == '__main__':
     df = pd.read_excel(DOC_FILEPATH, SHEET_NAME)
     df.columns = [x.lower() for x in df.columns]
 
     # разбор по фио
-    df[['фамилия', 'имя', 'отчество']] = df_split_fullname(df_get('фамилия'))
+    df[['фамилия', 'имя', 'отчество']] = df_split('фамилия')
     # нахождение пола
     df['пол'] = df_gender()
     # кол-во лет на момент устройства
@@ -105,11 +110,11 @@ if __name__ == '__main__':
     # средний возраст уволенных
     # print(df_mean_age_fired())
 
-    # какой пол больше увольняли
+    # какой пол больше уволили
     # print(df_max_fired())
 
     # кол-во сотрудников по описанию
-    print(df_count_employees('фамилия', 'М'))
+    # print(df_count_employees('фамилия', 'М'))
 
     # кол-во разных вариантов увольнения
     # print(df_get('причина увольнения').nunique())
