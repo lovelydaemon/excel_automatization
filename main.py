@@ -71,18 +71,27 @@ def df_max_count_value(column: str) -> str:
 
 
 def df_num_working(at_time: str) -> int:
-    new_df = df_get('дата увольнения')
-    return np.logical_or(new_df.isna(), new_df.gt(at_time)).sum()
+    """Возвращает количество работающих на указанный период времени"""
+    tmp = df_get('дата увольнения')
+    return np.logical_or(tmp.isna(), tmp.gt(at_time)).sum()
 
 
 def df_num_fired(at_time: str) -> int:
+    """Возвращает количество уволенных на указанный период времени"""
     return np.sum(df_get('дата увольнения').le(at_time))
 
 
 def df_mean_age_fired():
+    """Возвращает средний возраст уволенных сотрудников"""
     new = df_get('дата рождения', 'дата увольнения').dropna()
     time = np.timedelta64(1, 'Y')
     return (np.subtract(new['дата увольнения'], new['дата рождения']) / time).mean().astype(int)
+
+
+def df_work_experience(at_time: str):
+    """Возвращает колонку со стажем работы на указанный период времени"""
+    tmp = (df_get('дата увольнения').fillna(at_time) - df_get('дата приема')).dt.days
+    return tmp
 
 
 if __name__ == '__main__':
@@ -91,12 +100,18 @@ if __name__ == '__main__':
 
     # разбор по фио
     df[['фамилия', 'имя', 'отчество']] = df_split('фамилия')
+
     # нахождение пола
     df['пол'] = df_gender()
+
     # кол-во лет на момент устройства
     df['возраст на дату приема'] = df_timedelta('дата приема', 'дата рождения', 'Y')
+
     # на пенсии
     df['пенсионного возраста'] = df_on_pension()
+
+    # стаж работы
+    df['стаж'] = df_work_experience('2017-01-01')
 
     # кол-во работающих на 1.1.17
     # print(df_num_working('2017-01-01'))
@@ -108,14 +123,13 @@ if __name__ == '__main__':
     # print(df_num_fired('2009-01-01'))
 
     # средний возраст уволенных
-    # print(df_mean_age_fired())
+    print(df_mean_age_fired())
 
     # какой пол больше уволили
     # print(df_max_fired())
 
     # кол-во сотрудников по описанию
     # print(df_count_employees('фамилия', 'М'))
-
     # кол-во разных вариантов увольнения
     # print(df_get('причина увольнения').nunique())
 
